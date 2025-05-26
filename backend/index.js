@@ -21,18 +21,15 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const projectRoot = path.join(__dirname, "..");
 
-// Define allowed origins - Adjust as needed
+// Define allowed origins
 const allowedOrigins = [
-  'https://tugas-7-dion-dot-g-01-02.uc.r.appspot.com',
-  'http://localhost:3000', // Add more origins if needed
+  'https://tugas-7-dion-dot-g-01-02.uc.r.appspot.com', // Your frontend URL
+  'http://localhost:3000',  // Local development
 ];
 
-// Enhanced CORS configuration
 app.use(cors({
   origin: (origin, callback) => {
-    console.log('CORS Request from origin:', origin);
-
-    // Allow all origins temporarily for debugging
+    // Allow all origins for testing, restrict in production
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
@@ -43,12 +40,11 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
   exposedHeaders: ['Set-Cookie'],
-  maxAge: 86400, // Cache preflight response for 24 hours
+  maxAge: 86400,  // Cache preflight response for 24 hours
 }));
 
-// Handle preflight requests explicitly
+// Handle preflight requests
 app.options('*', (req, res) => {
-  console.log('Preflight request received for:', req.path);
   res.header('Access-Control-Allow-Origin', req.get('Origin') || '*');
   res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With,Accept,Origin');
