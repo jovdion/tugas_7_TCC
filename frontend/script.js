@@ -8,6 +8,7 @@ function joinUrl(base, path) {
 
 let token = localStorage.getItem('token');
 
+// Handle session expiration (redirect to login if not authenticated)
 function handleSessionExpired() {
     alert('Sesi Anda telah habis. Silakan login ulang.');
     localStorage.removeItem('token');
@@ -15,15 +16,17 @@ function handleSessionExpired() {
     window.location.href = 'login.html';
 }
 
+// Check token validity by response status (401 or 403)
 function checkTokenValidity(response) {
     return !(response.status === 401 || response.status === 403);
 }
 
+// Function to refresh token if expired (get new token using refresh token)
 async function refreshAccessToken() {
     try {
-        const response = await fetch(joinUrl(API_URL, 'token'), {
+        const response = await fetch(joinUrl(API_URL, 'refresh-token'), {
             method: 'GET',
-            credentials: 'include'
+            credentials: 'include' // Include cookies for refresh token
         });
 
         if (!response.ok) throw new Error('Refresh token gagal');
@@ -43,6 +46,7 @@ async function refreshAccessToken() {
     }
 }
 
+// API request function with authentication token in headers
 async function apiRequest(url, options = {}, retry = true) {
     try {
         token = localStorage.getItem('token');
@@ -52,11 +56,11 @@ async function apiRequest(url, options = {}, retry = true) {
         }
 
         options.headers = options.headers || {};
-        options.headers.Authorization = `Bearer ${token}`;
+        options.headers.Authorization = `Bearer ${token}`; // Add token to headers
 
         let response = await fetch(url, options);
 
-        if (checkTokenValidity(response)) return response;
+        if (checkTokenValidity(response)) return response; // Valid token, proceed
 
         if (retry) {
             const refreshed = await refreshAccessToken();
@@ -74,7 +78,7 @@ async function apiRequest(url, options = {}, retry = true) {
     }
 }
 
-// LOGIN
+// Login functionality
 const loginForm = document.getElementById("loginForm");
 if (loginForm) {
     loginForm.addEventListener("submit", async (e) => {
@@ -99,7 +103,7 @@ if (loginForm) {
             const data = await response.json();
             localStorage.setItem("token", data.accessToken);
             token = data.accessToken;
-            window.location.href = "index.html";
+            window.location.href = "index.html"; // Redirect to main page
         } catch (err) {
             console.error(err);
             alert("Terjadi kesalahan saat login.");
@@ -107,7 +111,7 @@ if (loginForm) {
     });
 }
 
-// REGISTER
+// Registration functionality
 const registerForm = document.getElementById('registerForm');
 if (registerForm) {
     registerForm.addEventListener('submit', async (e) => {
@@ -132,7 +136,7 @@ if (registerForm) {
 
             if (response.ok) {
                 alert('Register berhasil! Silakan login.');
-                window.location.href = 'login.html';
+                window.location.href = 'login.html'; // Redirect to login page
             } else {
                 const data = await response.json();
                 alert('Gagal Register: ' + (data.msg || 'Terjadi kesalahan'));
@@ -164,7 +168,7 @@ if (registerForm) {
     }
 }
 
-// INDEX.HTML LOGIC
+// Notes CRUD functionality (for logged-in users)
 const catatanForm = document.getElementById('catatan-form');
 const catatanIdField = document.getElementById('catatan-id');
 const namaField = document.getElementById('nama');
@@ -194,16 +198,17 @@ if (logoutBtn) {
         } finally {
             localStorage.removeItem('token');
             token = null;
-            window.location.href = 'login.html';
+            window.location.href = 'login.html'; // Redirect to login after logout
         }
     });
 }
 
+// Initialize App on loading
 async function initializeApp() {
     token = localStorage.getItem('token');
     if (!token) {
         console.log('Token tidak ditemukan, redirect ke login');
-        window.location.href = 'login.html';
+        window.location.href = 'login.html'; // Redirect if token not found
         return;
     }
 
@@ -322,7 +327,7 @@ function editNote(id, name, judul, isi_catatan) {
     statusDiv.textContent = '';
 }
 
-// Jalankan hanya jika sedang di halaman index.html
+// Initialize the app when the page is loaded
 if (window.location.pathname.includes('index.html') || window.location.pathname === '/' || window.location.pathname.endsWith('/')) {
     document.addEventListener('DOMContentLoaded', () => {
         console.log('DOM loaded, inisialisasi aplikasi...');
