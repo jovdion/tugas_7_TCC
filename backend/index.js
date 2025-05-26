@@ -23,17 +23,17 @@ const projectRoot = path.join(__dirname, "..");
 
 // Define allowed origins
 const allowedOrigins = [
-  'https://tugas-7-dion-dot-g-01-02.uc.r.appspot.com', // Your frontend URL
+  'https://tugas-7-dion-dot-g-01-02.uc.r.appspot.com',  // Your frontend URL
   'http://localhost:3000',  // Local development
 ];
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow all origins for testing, restrict in production
+    console.log('Request from origin:', origin);  // Log the origin for debugging
     if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
+      callback(null, true);  // Allow the request
     } else {
-      callback(new Error('Not allowed by CORS'));
+      callback(new Error('Not allowed by CORS'));  // Reject the request
     }
   },
   credentials: true,
@@ -43,16 +43,18 @@ app.use(cors({
   maxAge: 86400,  // Cache preflight response for 24 hours
 }));
 
-// Handle preflight requests
+// Handle preflight requests (OPTIONS)
 app.options('*', (req, res) => {
+  console.log('Preflight request received for:', req.path);
   res.header('Access-Control-Allow-Origin', req.get('Origin') || '*');
   res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With,Accept,Origin');
   res.header('Access-Control-Allow-Credentials', 'true');
-  res.header('Access-Control-Max-Age', '86400');
+  res.header('Access-Control-Max-Age', '86400');  // 24 hours
   res.sendStatus(200);
 });
 
+// Middleware for handling cookies and parsing JSON requests
 app.use(cookieParser());
 app.use(express.json());
 
@@ -85,49 +87,19 @@ app.get("/health", async (req, res) => {
   }
 });
 
-// Database synchronization function
-const syncDatabase = async () => {
-  try {
-    console.log('🔄 Starting database synchronization...');
-    
-    const User = (await import('./models/Usermodel.js')).default;
-    const Catatan = (await import('./models/CatatanModel.js')).default;
-    
-    User.hasMany(Catatan, {
-      foreignKey: 'userId',
-      as: 'catatans',
-      onDelete: 'CASCADE',
-      onUpdate: 'CASCADE',
-    });
-
-    Catatan.belongsTo(User, {
-      foreignKey: 'userId',
-      as: 'user',
-      onDelete: 'CASCADE',
-      onUpdate: 'CASCADE',
-    });
-
-    await db.sync({ force: false, alter: false });
-    console.log('✅ Database synchronized successfully');
-  } catch (error) {
-    console.error('❌ Database synchronization failed:', error);
-  }
-};
-
-// Initialize server
+// Start the server and sync the database
 const startServer = async () => {
   try {
-    console.log('🔍 Testing database connection...');
     await db.authenticate();
-    console.log('✅ Database connection established successfully');
+    console.log('✅ Database connection established');
     
-    await syncDatabase();
+    await db.sync({ force: false, alter: false });
+    console.log('✅ Database synchronized');
     
     const PORT = process.env.PORT || 3000;
     app.listen(PORT, () => {
-      console.log(`🚀 Server up and running on port ${PORT}`);
+      console.log(`🚀 Server running on port ${PORT}`);
     });
-    
   } catch (error) {
     console.error('❌ Failed to start server:', error);
     process.exit(1);
