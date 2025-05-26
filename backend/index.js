@@ -31,11 +31,18 @@ const allowedOrigins = [
   'http://127.0.0.1:3000',                             // Alternative localhost
 ];
 
-// Enhanced CORS configuration
+// Enhanced CORS configuration - TEMPORARY: Allow all origins for debugging
 app.use(cors({
   origin: (origin, callback) => {
     console.log('CORS Request from origin:', origin);
     
+    // TEMPORARY: Allow all origins for debugging
+    // TODO: Restrict this after confirming the correct frontend URL
+    console.log('Allowing all origins for debugging');
+    return callback(null, true);
+    
+    /* 
+    // PRODUCTION CODE - Uncomment after confirming frontend URL
     // Allow requests with no origin (mobile apps, postman, etc.)
     if (!origin) {
       console.log('No origin - allowing request');
@@ -62,6 +69,7 @@ app.use(cors({
     
     console.log('Origin rejected:', origin);
     callback(new Error('Not allowed by CORS'));
+    */
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
