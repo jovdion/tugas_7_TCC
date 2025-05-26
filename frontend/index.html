@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aplikasi Catatan</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .container {
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 5px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        button.delete {
+            background-color: #f44336;
+        }
+        button.delete:hover {
+            background-color: #d32f2f;
+        }
+        button.edit {
+            background-color: #2196F3;
+        }
+        button.edit:hover {
+            background-color: #0b7dda;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 5px;
+        }
+        .status {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 4px;
+            display: none;
+        }
+        .success {
+            background-color: #dff0d8;
+            color: #3c763d;
+        }
+        .error {
+            background-color: #f2dede;
+            color: #a94442;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .logout-btn {
+            background-color: #ff6b6b;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .logout-btn:hover {
+            background-color: #ff5252;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Aplikasi Catatan</h1>
+            <button class="logout-btn" onclick="logout()">Logout</button>
+        </div>
+        
+        <div id="status" class="status"></div>
+        
+        <div id="form-container">
+            <h2 id="form-title">Tambah Catatan Baru</h2>
+            <form id="catatan-form">
+                <input type="hidden" id="catatan-id">
+                <div class="form-group">
+                    <label for="nama">Nama:</label>
+                    <input type="text" id="nama" required>
+                </div>
+                <div class="form-group">
+                    <label for="judul">Judul:</label>
+                    <input type="text" id="judul" required>
+                </div>
+                <div class="form-group">
+                    <label for="isi">Isi Catatan:</label>
+                    <textarea id="isi" rows="5" required></textarea>
+                </div>
+                <div class="form-group">
+                    <button type="submit" id="submit-btn">Simpan</button>
+                    <button type="button" id="cancel-btn" style="display:none;">Batal</button>
+                </div>
+            </form>
+        </div>
+        
+        <h2>Daftar Catatan</h2>
+        <table id="catatan-table">
+            <thead>
+                <tr>
+                    <th>Nama</th>
+                    <th>Judul</th>
+                    <th>Isi Catatan</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody id="catatan-list">
+                <!-- Data will be inserted here -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        // Base API URL
+        const BASE_URL = "http://localhost:3000";
+        
+        // DOM Elements
+        const catatanForm = document.getElementById('catatan-form');
+        const catatanIdField = document.getElementById('catatan-id');
+        const namaField = document.getElementById('nama');
+        const judulField = document.getElementById('judul');
+        const isiField = document.getElementById('isi');
+        const catatanList = document.getElementById('catatan-list');
+        const formTitle = document.getElementById('form-title');
+        const submitBtn = document.getElementById('submit-btn');
+        const cancelBtn = document.getElementById('cancel-btn');
+        const statusDiv = document.getElementById('status');
+        
+        // Event listeners
+        catatanForm.addEventListener('submit', handleSubmit);
+        cancelBtn.addEventListener('click', resetForm);
+        
+        // Load catatan when page loads
+        window.onload = function () {
+            getCatatan();
+        };
+        
+        // Handle form submission
+        async function handleSubmit(event) {
+            event.preventDefault();
+            
+            const catatanId = catatanIdField.value;
+            
+            if (catatanId) {
+                // Update existing catatan
+                await updateCatatan(catatanId);
+            } else {
+                // Create new catatan
+                await addCatatan();
+            }
+        }
+        
+        // Get all catatan
+        async function getCatatan() {
+            const token = localStorage.getItem("token");
+
+            if (!token) {
+                showStatus("Token tidak ditemukan. Silakan login.", "error");
+                return;
+            }
+
+            try {
+                const response = await fetch(`${BASE_URL}/catatan`, {
+                    method: "GET",
+                    headers: {
+                        "Authorization": `Bearer ${token}`,
+                        "Content-Type": "application/json"
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    displayCatatan(data);
+                    hideStatus();
+                } else {
+                    const errorData = await response.json();
+                    showStatus(errorData.msg || "Error fetching catatan", "error");
+                }
+            } catch (error) {
+                console.error("Error:", error);
+                showStatus("Terjadi kesalahan saat mengambil data", "error");
+            }
+        }
+        
+        // Display catatan in table
+        function displayCatatan(catatan) {
+            catatanList.innerHTML = "";
+
+            catatan.forEach(item => {
+                const row = document.createElement("tr");
+                row.innerHTML = `
+                    <td>${escapeHtml(item.name)}</td>
+                    <td>${escapeHtml(item.judul)}</td>
+                    <td>${escapeHtml(item.isi_catatan)}</td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="edit" onclick="editCatatan(${item.catatan_id}, '${escapeHtml(item.name)}', '${escapeHtml(item.judul)}', '${escapeHtml(item.isi_catatan)}')">Edit</button>
+                            <button class="delete" onclick="deleteCatatan(${item.catatan_id})">Hapus</button>
+                        </div>
+                    </td>
+                `;
+                catatanList.appendChild(row);
+            });
+        }
+        
+        // Add new catatan
+        async function addCatatan() {
+            const name = namaField.value.trim();
+            const judul = judulField.value.trim();
+            const isi_catatan = isiField.value.trim();
+            const token = localStorage.getItem("token");
+
+            if (!token) {
+                showStatus("Token tidak ditemukan. Silakan login.", "error");
+                return;
+            }
+
+            if (!name || !judul || !isi_catatan) {
+                showStatus("Semua field harus diisi", "error");
+                return;
+            }
+
+            const newNote = {
+                name,
+                judul,
+                isi_catatan
+            };
+
+            try {
+                const response = await fetch(`${BASE_URL}/catatan`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${token}`
+                    },
+                    body: JSON.stringify(newNote)
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    showStatus("Catatan berhasil ditambahkan!", "success");
+                    resetForm();
+                    getCatatan();
+                } else {
+                    const errorData = await response.json();
+                    showStatus(errorData.msg || "Error creating catatan", "error");
+                }
+            } catch (error) {
+                console.error("Error:", error);
+                showStatus("Terjadi kesalahan saat menambahkan catatan", "error");
+            }
+        }
+        
+        // Update catatan
+        async function updateCatatan(id) {
+            const judul = judulField.value.trim();
+            const isi_catatan = isiField.value.trim();
+            const token = localStorage.getItem("token");
+
+            if (!token) {
+                showStatus("Token tidak ditemukan. Silakan login.", "error");
+                return;
+            }
+
+            if (!judul || !isi_catatan) {
+                showStatus("Judul dan isi catatan harus diisi", "error");
+                return;
+            }
+
+            const updateData = {
+                judul,
+                isi_catatan
+            };
+
+            try {
+                const response = await fetch(`${BASE_URL}/catatan-update/${id}`, {
+                    method: "PUT",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${token}`
+                    },
+                    body: JSON.stringify(updateData)
+                });
+
+                if (response.ok) {
+                    showStatus("Catatan berhasil diperbarui!", "success");
+                    resetForm();
+                    getCatatan();
+                } else {
+                    const errorData = await response.json();
+                    showStatus(errorData.msg || "Error updating catatan", "error");
+                }
+            } catch (error) {
+                console.error("Error:", error);
+                showStatus("Terjadi kesalahan saat memperbarui catatan", "error");
+            }
+        }
+        
+        // Delete catatan
+        async function deleteCatatan(id) {
+            if (!confirm("Yakin ingin menghapus catatan ini?")) {
+                return;
+            }
+
+            const token = localStorage.getItem("token");
+
+            if (!token) {
+                showStatus("Token tidak ditemukan. Silakan login.", "error");
+                return;
+            }
+
+            try {
+                const response = await fetch(`${BASE_URL}/catatan-hapus/${id}`, {
+                    method: "DELETE",
+                    headers: {
+                        "Authorization": `Bearer ${token}`,
+                        "Content-Type": "application/json"
+                    }
+                });
+
+                if (response.ok) {
+                    showStatus("Catatan berhasil dihapus!", "success");
+                    getCatatan();
+                } else {
+                    const errorData = await response.json();
+                    showStatus(errorData.msg || "Error deleting catatan", "error");
+                }
+            } catch (error) {
+                console.error("Error:", error);
+                showStatus("Terjadi kesalahan saat menghapus catatan", "error");
+            }
+        }
+        
+        // Edit catatan (populate form)
+        function editCatatan(id, name, judul, isi) {
+            formTitle.textContent = 'Edit Catatan';
+            catatanIdField.value = id;
+            namaField.value = name;
+            judulField.value = judul;
+            isiField.value = isi;
+            
+            // Disable name field during edit (based on your controller logic)
+            namaField.disabled = true;
+            
+            submitBtn.textContent = 'Perbarui';
+            cancelBtn.style.display = 'inline-block';
+            
+            // Scroll to form
+            document.getElementById('form-container').scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        // Reset form
+        function resetForm() {
+            formTitle.textContent = 'Tambah Catatan Baru';
+            catatanForm.reset();
+            catatanIdField.value = '';
+            namaField.disabled = false;
+            submitBtn.textContent = 'Simpan';
+            cancelBtn.style.display = 'none';
+            hideStatus();
+        }
+        
+        // Show status message
+        function showStatus(message, type) {
+            statusDiv.textContent = message;
+            statusDiv.className = 'status';
+            
+            if (type === 'success') {
+                statusDiv.classList.add('success');
+            } else if (type === 'error') {
+                statusDiv.classList.add('error');
+            }
+            
+            statusDiv.style.display = 'block';
+            
+            // Auto hide success messages after 3 seconds
+            if (type === 'success') {
+                setTimeout(hideStatus, 3000);
+            }
+        }
+        
+        // Hide status message
+        function hideStatus() {
+            statusDiv.style.display = 'none';
+        }
+        
+        // Helper function to escape HTML
+        function escapeHtml(str) {
+            if (!str) return '';
+            
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+        
+        // Logout function
+        function logout() {
+            if (confirm("Yakin ingin logout?")) {
+                // Clear token from localStorage
+                localStorage.removeItem("token");
+                
+                // Show logout message
+                showStatus("Logout berhasil! Redirecting...", "success");
+                
+                // Redirect to login page after 2 seconds
+                setTimeout(() => {
+                    // Replace with your actual login page URL
+                    window.location.href = "login.html";
+                }, 2000);
+            }
+        }
+    </script>
+</body>
+</html>
