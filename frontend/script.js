@@ -1,4 +1,4 @@
-const API_URL = 'http://localhost:3000';
+const API_URL = 'https://tugas-7-dion-913201672104.us-central1.run.app';
 
 function joinUrl(base, path) {
     if (base.endsWith('/')) base = base.slice(0, -1);
