@@ -21,7 +21,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const projectRoot = path.join(__dirname, "..");
 
-const allowedOrigin = 'http://localhost:3000';
+const allowedOrigin = 'https://tugas-7-dion-dot-g-01-02.uc.r.appspot.com';
 
 // CORS configuration
 app.use(cors({
