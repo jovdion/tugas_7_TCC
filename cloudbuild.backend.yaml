@@ -15,9 +15,9 @@ steps:
       [
         "run",
         "deploy",
-        "notes-be-oscar-final",
+        "tugas-7-dion",
         "--image",
-        "gcr.io/$PROJECT_ID/notes-be-oscar-final",
+        "gcr.io/$PROJECT_ID/tugas-7-dion",
         "--timeout",
         "1000s",
         "--port",
@@ -26,7 +26,7 @@ steps:
         "us-central1",
         "--allow-unauthenticated",
         "--set-env-vars",
-        "ACCESS_TOKEN_SECRET=${_ACCESS_TOKEN_SECRET},REFRESH_TOKEN_SECRET=${_REFRESH_TOKEN_SECRET},DB_HOST=${_DB_HOST},DB_NAME=${_DB_NAME},DB_PASSWORD=${_DB_PASSWORD},DB_USERNAME=${_DB_USERNAME}",
+        "ACCESS_TOKEN_SECRET=${_ACCESS_TOKEN_SECRET},REFRESH_TOKEN_SECRET=${_REFRESH_TOKEN_SECRET},DB_HOST=${_DB_HOST},DB_NAME=${_DB_NAME},DB_PASSWORD=${_DB_PASSWORD},DB_USERNAME=${_DB_USERNAME},DB_PORT=${_DB_PORT},NODE_ENV=${_NODE_ENV}",
       ]
 
   # copas --set env-vars (2baris)
