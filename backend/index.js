@@ -8,7 +8,7 @@ import { fileURLToPath } from "url";
 // Import database connection
 import db from "./config/database.js";
 
-// Import routing dan model
+// Import routing and models
 import CatatanRoute from "./Route/CatatanRoute.js";
 import UserRoute from "./Route/Userroute.js";
 import "./models/Usermodel.js";
@@ -21,14 +21,24 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const projectRoot = path.join(__dirname, "..");
 
-const allowedOrigin = 'https://tugas-7-dion-dot-g-01-02.uc.r.appspot.com';
+// Define allowed origins
+const allowedOrigins = [
+  'https://tugas-7-dion-dot-g-01-02.uc.r.appspot.com',  // Your frontend deployed URL
+  'http://localhost:3000',  // Local development
+];
 
 // CORS configuration
 app.use(cors({
-  origin: allowedOrigin,
+  origin: (origin, callback) => {
+    if (allowedOrigins.includes(origin) || !origin) {
+      callback(null, true);  // Allow the request
+    } else {
+      callback(new Error('Not allowed by CORS'));  // Reject the request
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
 app.use(cookieParser());
