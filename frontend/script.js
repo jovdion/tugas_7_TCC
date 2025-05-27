@@ -108,45 +108,21 @@ if (loginForm) {
 }
 
 // REGISTER
-// Password Strength Checker
-const passwordInput = document.getElementById('password');
-const strengthMeter = document.querySelector('.strength-meter');
-
-if (passwordInput && strengthMeter) {
-    passwordInput.addEventListener('input', function () {
-        const password = this.value;
-        let strength = 0;
-        if (password.length >= 8) strength += 25;
-        if (/[A-Z]/.test(password)) strength += 25;
-        if (/[0-9]/.test(password)) strength += 25;
-        if (/[^A-Za-z0-9]/.test(password)) strength += 25;
-
-        strengthMeter.style.width = strength + '%';
-        if (strength <= 25) strengthMeter.style.backgroundColor = '#ff4d4d';
-        else if (strength <= 50) strengthMeter.style.backgroundColor = '#ffa64d';
-        else if (strength <= 75) strengthMeter.style.backgroundColor = '#ffff4d';
-        else strengthMeter.style.backgroundColor = '#4dff4d';
-    });
-}
-
-// Handle Register Form Submit
 const registerForm = document.getElementById('registerForm');
 if (registerForm) {
     registerForm.addEventListener('submit', async (e) => {
-        e.preventDefault();  // Prevent page refresh
+        e.preventDefault();
 
         const username = document.getElementById('username').value;
         const email = document.getElementById('email').value;
         const password = document.getElementById('password').value;
         const confPassword = document.getElementById('confPassword').value;
 
-        // Check if passwords match
         if (password !== confPassword) {
             alert('Password dan konfirmasi password tidak cocok!');
             return;
         }
 
-        // Send the registration data to the backend
         try {
             const response = await fetch(joinUrl(API_URL, 'users'), {
                 method: 'POST',
@@ -154,12 +130,11 @@ if (registerForm) {
                 body: JSON.stringify({ username, email, password, confPassword })
             });
 
-            const data = await response.json();
-
             if (response.ok) {
                 alert('Register berhasil! Silakan login.');
-                window.location.href = 'login.html';  // Redirect to login page
+                window.location.href = 'login.html';
             } else {
+                const data = await response.json();
                 alert('Gagal Register: ' + (data.msg || 'Terjadi kesalahan'));
             }
         } catch (err) {
@@ -167,6 +142,26 @@ if (registerForm) {
             alert('Terjadi kesalahan saat register.');
         }
     });
+
+    const passwordInput = document.getElementById('password');
+    const strengthMeter = document.querySelector('.strength-meter');
+
+    if (passwordInput && strengthMeter) {
+        passwordInput.addEventListener('input', function () {
+            const password = this.value;
+            let strength = 0;
+            if (password.length >= 8) strength += 25;
+            if (/[A-Z]/.test(password)) strength += 25;
+            if (/[0-9]/.test(password)) strength += 25;
+            if (/[^A-Za-z0-9]/.test(password)) strength += 25;
+
+            strengthMeter.style.width = strength + '%';
+            if (strength <= 25) strengthMeter.style.backgroundColor = '#ff4d4d';
+            else if (strength <= 50) strengthMeter.style.backgroundColor = '#ffa64d';
+            else if (strength <= 75) strengthMeter.style.backgroundColor = '#ffff4d';
+            else strengthMeter.style.backgroundColor = '#4dff4d';
+        });
+    }
 }
 
 // INDEX.HTML LOGIC
