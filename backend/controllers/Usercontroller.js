@@ -38,10 +38,10 @@ export const Register = async (req, res) => {
 
         await Users.create({ username, email, password: hashPassword });
 
-        res.json({ msg: "Register Berhasil" });  // This should be the success response sent to the frontend
+        res.json({ msg: "Register Berhasil" });  // Success message
     } catch (error) {
         console.error("Error saat register:", error);
-        res.status(500).json({ msg: "Register Gagal" });
+        res.status(500).json({ msg: "Register Gagal" });  // Failure message
     }
 };
 

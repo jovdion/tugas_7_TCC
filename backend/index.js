@@ -25,7 +25,7 @@ const projectRoot = path.join(__dirname, "..");
 const allowedOrigins = [
   'https://tugas-7-dion-dot-g-01-02.uc.r.appspot.com',  // Your frontend URL
   'http://localhost:3000',  // Local development
-   'https://tugas-7-dion-913201672104.us-central1.run.app',
+  'https://tugas-7-dion-913201672104.us-central1.run.app',
 ];
 
 app.use(cors({
