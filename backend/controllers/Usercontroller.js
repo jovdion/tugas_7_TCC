@@ -28,7 +28,6 @@ export const Register = async (req, res) => {
     }
 
     try {
-        // Cek apakah email sudah digunakan
         const existingUser = await Users.findOne({ where: { email } });
         if (existingUser) {
             return res.status(400).json({ msg: "Email sudah terdaftar" });
@@ -39,12 +38,13 @@ export const Register = async (req, res) => {
 
         await Users.create({ username, email, password: hashPassword });
 
-        res.json({ msg: "Register Berhasil" });
+        res.json({ msg: "Register Berhasil" });  // This should be the success response sent to the frontend
     } catch (error) {
         console.error("Error saat register:", error);
         res.status(500).json({ msg: "Register Gagal" });
     }
 };
+
 
 // Login user
 export const Login = async (req, res) => {

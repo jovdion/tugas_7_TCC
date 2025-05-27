@@ -141,5 +141,43 @@ async function fetchNotes() {
         alert('Gagal mengambil catatan.');
     }
 }
+const registerForm = document.getElementById("registerForm");
+if (registerForm) {
+    registerForm.addEventListener("submit", async (e) => {
+        e.preventDefault();  // Prevent the page from refreshing
+
+        const username = document.getElementById("username").value;
+        const email = document.getElementById("email").value;
+        const password = document.getElementById("password").value;
+        const confPassword = document.getElementById("confPassword").value;
+
+        if (password !== confPassword) {
+            alert("Password dan konfirmasi password tidak cocok!");
+            return;
+        }
+
+        try {
+            const response = await fetch(joinUrl(API_URL, 'users'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, email, password, confPassword })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                // Show a success message
+                alert('Register berhasil! Silakan login.');
+                window.location.href = 'login.html';  // Redirect to login page
+            } else {
+                // Handle error from the server
+                alert('Gagal Register: ' + (data.msg || 'Terjadi kesalahan'));
+            }
+        } catch (err) {
+            console.error(err);
+            alert("Terjadi kesalahan saat register.");
+        }
+    });
+}
 
 // Example of other code (CRUD functions for catatan, etc.) remains as you originally had it...
