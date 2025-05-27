@@ -21,7 +21,7 @@ function checkTokenValidity(response) {
 
 async function refreshAccessToken() {
     try {
-        const response = await fetch(joinUrl(API_URL, 'refresh-token'), {
+        const response = await fetch(joinUrl(API_URL, 'token'), {
             method: 'GET',
             credentials: 'include'
         });
@@ -52,7 +52,7 @@ async function apiRequest(url, options = {}, retry = true) {
         }
 
         options.headers = options.headers || {};
-        options.headers.Authorization = `Bearer ${token}`; // Add token to Authorization header
+        options.headers.Authorization = `Bearer ${token}`;
 
         let response = await fetch(url, options);
 
@@ -74,7 +74,7 @@ async function apiRequest(url, options = {}, retry = true) {
     }
 }
 
-// Login form handling
+// LOGIN
 const loginForm = document.getElementById("loginForm");
 if (loginForm) {
     loginForm.addEventListener("submit", async (e) => {
@@ -107,14 +107,116 @@ if (loginForm) {
     });
 }
 
-// Fetch notes function
+// REGISTER
+const registerForm = document.getElementById('registerForm');
+if (registerForm) {
+    registerForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const username = document.getElementById('username').value;
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const confPassword = document.getElementById('confPassword').value;
+
+        if (password !== confPassword) {
+            alert('Password dan konfirmasi password tidak cocok!');
+            return;
+        }
+
+        try {
+            const response = await fetch(joinUrl(API_URL, 'users'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, email, password, confPassword })
+            });
+
+            if (response.ok) {
+                alert('Register berhasil! Silakan login.');
+                window.location.href = 'login.html';
+            } else {
+                const data = await response.json();
+                alert('Gagal Register: ' + (data.msg || 'Terjadi kesalahan'));
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Terjadi kesalahan saat register.');
+        }
+    });
+
+    const passwordInput = document.getElementById('password');
+    const strengthMeter = document.querySelector('.strength-meter');
+
+    if (passwordInput && strengthMeter) {
+        passwordInput.addEventListener('input', function () {
+            const password = this.value;
+            let strength = 0;
+            if (password.length >= 8) strength += 25;
+            if (/[A-Z]/.test(password)) strength += 25;
+            if (/[0-9]/.test(password)) strength += 25;
+            if (/[^A-Za-z0-9]/.test(password)) strength += 25;
+
+            strengthMeter.style.width = strength + '%';
+            if (strength <= 25) strengthMeter.style.backgroundColor = '#ff4d4d';
+            else if (strength <= 50) strengthMeter.style.backgroundColor = '#ffa64d';
+            else if (strength <= 75) strengthMeter.style.backgroundColor = '#ffff4d';
+            else strengthMeter.style.backgroundColor = '#4dff4d';
+        });
+    }
+}
+
+// INDEX.HTML LOGIC
+const catatanForm = document.getElementById('catatan-form');
+const catatanIdField = document.getElementById('catatan-id');
+const namaField = document.getElementById('nama');
+const judulField = document.getElementById('judul');
+const isiField = document.getElementById('isi');
+const catatanList = document.getElementById('catatan-list');
+const formTitle = document.getElementById('form-title');
+const submitBtn = document.getElementById('submit-btn');
+const cancelBtn = document.getElementById('cancel-btn');
+const statusDiv = document.getElementById('status');
+const logoutBtn = document.getElementById('logoutBtn');
+
+if (catatanForm && catatanIdField && namaField && judulField && isiField && catatanList && formTitle && submitBtn && cancelBtn && statusDiv) {
+    cancelBtn.addEventListener('click', resetForm);
+    catatanForm.addEventListener('submit', handleCatatanSubmit);
+}
+
+if (logoutBtn) {
+    logoutBtn.addEventListener('click', async () => {
+        try {
+            await fetch(joinUrl(API_URL, 'logout'), {
+                method: 'DELETE',
+                credentials: 'include'
+            });
+        } catch (error) {
+            console.error('Error saat logout:', error);
+        } finally {
+            localStorage.removeItem('token');
+            token = null;
+            window.location.href = 'login.html';
+        }
+    });
+}
+
+async function initializeApp() {
+    token = localStorage.getItem('token');
+    if (!token) {
+        console.log('Token tidak ditemukan, redirect ke login');
+        window.location.href = 'login.html';
+        return;
+    }
+
+    console.log('Token ditemukan, memuat catatan...');
+    await fetchNotes();
+}
+
 async function fetchNotes() {
     try {
         const response = await apiRequest(`${API_URL}/catatan`);
         if (!response || !response.ok) throw new Error('Gagal mengambil catatan');
 
         const notes = await response.json();
-        const catatanList = document.getElementById('catatan-list');
         catatanList.innerHTML = '';
 
         if (notes.length === 0) {
@@ -141,43 +243,89 @@ async function fetchNotes() {
         alert('Gagal mengambil catatan.');
     }
 }
-const registerForm = document.getElementById("registerForm");
-if (registerForm) {
-    registerForm.addEventListener("submit", async (e) => {
-        e.preventDefault();  // Prevent the page from refreshing
 
-        const username = document.getElementById("username").value;
-        const email = document.getElementById("email").value;
-        const password = document.getElementById("password").value;
-        const confPassword = document.getElementById("confPassword").value;
+function resetForm() {
+    catatanIdField.value = '';
+    namaField.value = '';
+    judulField.value = '';
+    isiField.value = '';
+    formTitle.textContent = 'Tambah Catatan Baru';
+    submitBtn.textContent = 'Tambah';
+    cancelBtn.style.display = 'none';
+    statusDiv.textContent = '';
+}
 
-        if (password !== confPassword) {
-            alert("Password dan konfirmasi password tidak cocok!");
+async function handleCatatanSubmit(event) {
+    event.preventDefault();
+
+    const id = catatanIdField.value;
+    const name = namaField.value;
+    const judul = judulField.value;
+    const isi_catatan = isiField.value;
+
+    if (!name || !judul || !isi_catatan) {
+        alert('Nama, judul, dan isi catatan tidak boleh kosong.');
+        return;
+    }
+
+    const method = id ? 'PUT' : 'POST';
+    const url = id ? `${API_URL}/catatan-update/${id}` : `${API_URL}/catatan`;
+
+    try {
+        const response = await apiRequest(url, {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, judul, isi_catatan })
+        });
+
+        if (!response || !response.ok) {
+            const data = await response.json();
+            alert(`Gagal ${id ? 'mengubah' : 'menambahkan'} catatan: ` + (data.msg || 'Terjadi kesalahan'));
             return;
         }
 
-        try {
-            const response = await fetch(joinUrl(API_URL, 'users'), {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, email, password, confPassword })
-            });
-
-            const data = await response.json();
-
-            if (response.ok) {
-                // Show a success message
-                alert('Register berhasil! Silakan login.');
-                window.location.href = 'login.html';  // Redirect to login page
-            } else {
-                // Handle error from the server
-                alert('Gagal Register: ' + (data.msg || 'Terjadi kesalahan'));
-            }
-        } catch (err) {
-            console.error(err);
-            alert("Terjadi kesalahan saat register.");
-        }
-    });
+        resetForm();
+        fetchNotes();
+    } catch (error) {
+        console.error('Error submitting note:', error);
+        alert('Terjadi kesalahan saat menyimpan catatan.');
+    }
 }
 
-// Example of other code (CRUD functions for catatan, etc.) remains as you originally had it...
+async function deleteNote(id) {
+    if (!confirm('Anda yakin ingin menghapus catatan ini?')) return;
+
+    try {
+        const response = await apiRequest(`${API_URL}/catatan-hapus/${id}`, { method: 'DELETE' });
+
+        if (!response || !response.ok) {
+            const data = await response.json();
+            alert('Gagal menghapus catatan: ' + (data.msg || 'Terjadi kesalahan'));
+            return;
+        }
+
+        fetchNotes();
+    } catch (error) {
+        console.error('Error deleting note:', error);
+        alert('Terjadi kesalahan saat menghapus catatan.');
+    }
+}
+
+function editNote(id, name, judul, isi_catatan) {
+    catatanIdField.value = id;
+    namaField.value = name;
+    judulField.value = judul;
+    isiField.value = isi_catatan;
+    formTitle.textContent = 'Edit Catatan';
+    submitBtn.textContent = 'Simpan';
+    cancelBtn.style.display = 'inline';
+    statusDiv.textContent = '';
+}
+
+// Jalankan hanya jika sedang di halaman index.html
+if (window.location.pathname.includes('index.html') || window.location.pathname === '/' || window.location.pathname.endsWith('/')) {
+    document.addEventListener('DOMContentLoaded', () => {
+        console.log('DOM loaded, inisialisasi aplikasi...');
+        initializeApp();
+    });
+}
