@@ -108,6 +108,7 @@ if (loginForm) {
 }
 
 // REGISTER
+// Password Strength Checker
 const passwordInput = document.getElementById('password');
 const strengthMeter = document.querySelector('.strength-meter');
 
